@@ -44,11 +44,11 @@ class TrainManager():
             print("\n# Epoch {} #".format(epoch+1))
             print("## Train Start ##")
             self.train_loop("train")
-            print("Train Loss : {} | HR@5 : {} \n".format(self.log["train_loss"], self.log["train_hr"]))
+            print("Train Loss : {} | HR@10 : {} \n".format(self.log["train_loss"], self.log["train_hr"]))
 
             print("## Validation Start ##")
             self.train_loop("valid")
-            print("Valid Loss : {} | HR@5 : {}".format(self.log["valid_loss"], self.log["valid_hr"]))
+            print("Valid Loss : {} | HR@10 : {}".format(self.log["valid_loss"], self.log["valid_hr"]))
             
             self.optimizer_wrap.update_lr(epoch)
             
@@ -64,7 +64,6 @@ class TrainManager():
                 print("No update on valid loss. Early stop...")
                 break
         
-                
                 
     def train_loop(self, phase):
         if phase == "train":
@@ -86,7 +85,6 @@ class TrainManager():
         for idx, sample in enumerate(dataset):
             x, y, u = sample
             n_s = self.dataloader.get_negative_sample(u)  
-                      
             loss, y_pred = self.propagation(x, y, n_s, phase)
             
             hr = self.score_manager.hit_rate(y, y_pred, 10)
@@ -110,7 +108,7 @@ class TrainManager():
                 print("HR: {} ".format(round(hr_avg, 7)))
                 
                 loss_list.clear()
-                # hr_list.clear()
+                hr_list.clear()
                 start_time = time.time()
                 
         total_loss = np.average(np.array(all_loss_list))
@@ -124,7 +122,6 @@ class TrainManager():
         dim = tf.cast(dim, dtype = tf.int32)        
         one_hot = tf.one_hot(y, dim)
         return one_hot
-
 
     @tf.function
     def propagation(self, x, y_true, n_s, phase):

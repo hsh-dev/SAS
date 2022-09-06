@@ -5,7 +5,7 @@ import random
 from tqdm import tqdm
 
 from DataModule.Lookup import StringLookup
-
+import time
 
 class DataLoader():
     def __init__(self, config) -> None:
@@ -56,8 +56,8 @@ class DataLoader():
         
         self._make_negative_sample(train_set, valid_set)
         
-        self.train_x, self.train_y, self.train_u = self.make_seq_to_seq(train_set, 10)              
-        self.valid_x, self.valid_y, self.valid_u = self.make_seq_to_seq(valid_set, 20)        
+        self.train_x, self.train_y, self.train_u = self.make_seq_to_seq(train_set, 30)              
+        self.valid_x, self.valid_y, self.valid_u = self.make_seq_to_seq(valid_set, 30)        
 
     def _make_negative_sample(self, train_set, valid_set):
         self.negative_sample = {}        
@@ -229,12 +229,13 @@ class DataLoader():
         if phase == "train":
             x = self.string_lookup.str_to_idx(self.train_x)
             y = self.string_lookup.str_to_idx(self.train_y)
-            
-            dataset = tf.data.Dataset.from_tensor_slices((
-                            x, y, self.train_u))
-            dataset = dataset.batch(batch_size, drop_remainder=True)
-            dataset = dataset.cache()
-            dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+              
+            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.train_u))
+            dataset = dataset\
+                        .batch(batch_size, drop_remainder=True)\
+                        .shuffle(buffer_size = len(x))\
+                        .cache()\
+                        .prefetch(tf.data.AUTOTUNE)
             
             return dataset
         
@@ -242,15 +243,13 @@ class DataLoader():
             x = self.string_lookup.str_to_idx(self.valid_x)
             y = self.string_lookup.str_to_idx(self.valid_y)
 
-            dataset = tf.data.Dataset.from_tensor_slices((
-                x, y, self.valid_u))
-            dataset = dataset.batch(batch_size, drop_remainder=True)
-            dataset = dataset.cache()
-            dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.valid_u))
+            dataset = dataset\
+                        .batch(batch_size, drop_remainder=True)\
+                        .cache()\
+                        .prefetch(tf.data.AUTOTUNE)
             
             return dataset
-
-
 
     '''
     APIs
