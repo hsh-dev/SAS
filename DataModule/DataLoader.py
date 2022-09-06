@@ -56,8 +56,8 @@ class DataLoader():
         
         self._make_negative_sample(train_set, valid_set)
         
-        self.train_x, self.train_y, self.train_u = self.make_seq_to_seq(train_set, 30)              
-        self.valid_x, self.valid_y, self.valid_u = self.make_seq_to_seq(valid_set, 30)        
+        self.train_x, self.train_y, self.train_u = self.make_seq_to_seq(train_set, 10)              
+        self.valid_x, self.valid_y, self.valid_u = self.make_seq_to_seq(valid_set, 20)        
 
     def _make_negative_sample(self, train_set, valid_set):
         self.negative_sample = {}        
