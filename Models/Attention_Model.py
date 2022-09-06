@@ -1,7 +1,7 @@
 import tensorflow as tf
 from keras import Model
 from keras.layers import Dense, Softmax, ReLU, LayerNormalization, Dropout
-
+import math
 
 class SelfAttentionLayer(Model):
     def __init__(self, d_dim):
