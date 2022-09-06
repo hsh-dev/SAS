@@ -233,15 +233,20 @@ class DataLoader():
             dataset = tf.data.Dataset.from_tensor_slices((
                             x, y, self.train_u))
             dataset = dataset.batch(batch_size, drop_remainder=True)
-            dataset = dataset.prefetch(1)
+            dataset = dataset.cache()
+            dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
             
             return dataset
         
         elif phase == "valid":
+            x = self.string_lookup.str_to_idx(self.valid_x)
+            y = self.string_lookup.str_to_idx(self.valid_y)
+
             dataset = tf.data.Dataset.from_tensor_slices((
-                            self.valid_x, self.valid_y, self.valid_u))
+                x, y, self.valid_u))
             dataset = dataset.batch(batch_size, drop_remainder=True)
-            dataset = dataset.prefetch(1)
+            dataset = dataset.cache()
+            dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
             
             return dataset
 

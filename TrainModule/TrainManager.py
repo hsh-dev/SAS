@@ -23,12 +23,12 @@ class TrainManager():
                 optimizer = tf.keras.optimizers.Adam(
                     learning_rate=self.config["learning_rate"], beta_1=0.9, beta_2=0.999),
                 max_lr = self.config["learning_rate"],
-                min_lr = self.config["learning_rate"] * 0.01,
+                min_lr = self.config["min_learning_rate"],
                 max_epochs = self.config["max_epoch"],
-                decay_cycles = 4,
-                decay_epochs = 100
+                decay_cycles = self.config["decay_cycle"],
+                decay_epochs = self.config["decay_epoch"]
             )
-
+        
         self.log = {}
     
     
@@ -74,7 +74,7 @@ class TrainManager():
             dataset = self.dataloader.get_dataset("valid")
             
         total_step = len(dataset)
-        print_step = total_step // 100
+        print_step = total_step // 10
         
         all_loss_list = []
         loss_list = []
