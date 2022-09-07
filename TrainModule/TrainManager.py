@@ -85,7 +85,6 @@ class TrainManager():
         for idx, sample in enumerate(dataset):
             x, y = sample
             # n_s = self.dataloader.get_negative_sample(u)  
-
             loss, y_pred, hr = self.propagate_with_graph(x, y, phase, k = 10)
             
             all_loss_list.append(loss)
@@ -124,10 +123,14 @@ class TrainManager():
 
     @tf.function
     def propagate_with_graph(self, x, y, phase, k):
+        tf.profiler.experimental.start('./log')
+
         loss, y_pred = self.propagation(x, y, phase)
         
         hit_rate = self.score_manager.hit_rate(y, y_pred, k)
         
+        tf.profiler.experimental.stop()
+
         return loss, y_pred, hit_rate
 
 
