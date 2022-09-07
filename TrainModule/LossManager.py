@@ -16,7 +16,10 @@ class LossManager():
 
         return err
 
-    def bpr_loss(self, y_true_idx, negative_idx, y_pred):        
+    def bpr_loss_with_ns(self, y_true_idx, negative_idx, y_pred):  
+        '''
+        BPR Loss with Negative Sampling
+        '''      
         # Negative Sample
         negative_idx = tf.expand_dims(negative_idx, axis = 1)
         seq_dim = y_pred.shape[1]
@@ -39,11 +42,35 @@ class LossManager():
         # Loss Mask
         mask = tf.greater(y_true_idx, 0)
         non_zero_loss = tf.boolean_mask(loss, mask)
-
+        
         loss = K.mean(non_zero_loss)
     
         return loss
+    
+    def bpr_loss(self, y_true_idx, y_pred):
+        '''
+        BPR Loss without Negative Sampling
+        '''
+        positive_list = tf.gather(y_pred, 
+                                  indices = tf.expand_dims(y_true_idx, axis =2), 
+                                  axis = 2, 
+                                  batch_dims=2)
+        substract = positive_list - y_pred
+        item_len = substract.shape[2]
+        sig = K.sigmoid(substract)
+        
+        log = K.log(sig)
+        sum = K.sum(log, axis=2)
+        loss = sum / (-item_len)
+        
+        # Loss Mask
+        mask = tf.greater(y_true_idx, 0)
+        non_zero_loss = tf.boolean_mask(loss, mask)
 
+        loss = K.mean(non_zero_loss)
+
+        return loss
+    
     def top_1_ranking_loss(self, y_true_idx, y_pred):
         negative_list = tf.gather(y_pred, indices=y_true_idx, axis=1)
 

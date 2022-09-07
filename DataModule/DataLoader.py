@@ -230,7 +230,7 @@ class DataLoader():
             x = self.string_lookup.str_to_idx(self.train_x)
             y = self.string_lookup.str_to_idx(self.train_y)
               
-            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.train_u))
+            dataset = tf.data.Dataset.from_tensor_slices((x, y))
             dataset = dataset\
                         .batch(batch_size, drop_remainder=True)\
                         .shuffle(buffer_size = len(x))\
@@ -243,7 +243,7 @@ class DataLoader():
             x = self.string_lookup.str_to_idx(self.valid_x)
             y = self.string_lookup.str_to_idx(self.valid_y)
 
-            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.valid_u))
+            dataset = tf.data.Dataset.from_tensor_slices((x, y))
             dataset = dataset\
                         .batch(batch_size, drop_remainder=True)\
                         .cache()\

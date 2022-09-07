@@ -81,19 +81,18 @@ class TrainManager():
         hr_list = []
         
         start_time = time.time()
-        
+
         for idx, sample in enumerate(dataset):
-            x, y, u = sample
-            n_s = self.dataloader.get_negative_sample(u)  
-            loss, y_pred = self.propagation(x, y, n_s, phase)
-            
-            hr = self.score_manager.hit_rate(y, y_pred, 10)
+            x, y = sample
+            # n_s = self.dataloader.get_negative_sample(u)  
+
+            loss, y_pred, hr = self.propagate_with_graph(x, y, phase, k = 10)
             
             all_loss_list.append(loss)
             loss_list.append(loss)
             all_hr_list.append(hr)
             hr_list.append(hr)
-            
+                        
             if (idx+1) % print_step == 0:
                 end_time = time.time()
                 
@@ -110,12 +109,11 @@ class TrainManager():
                 loss_list.clear()
                 hr_list.clear()
                 start_time = time.time()
-                
+                    
         total_loss = np.average(np.array(all_loss_list))
         total_hr = np.average(np.array(all_hr_list))
         
         self.save_logs(total_loss, total_hr, phase)
-        
     
 
     def make_one_hot_vector(self, y, dim):
@@ -123,19 +121,28 @@ class TrainManager():
         one_hot = tf.one_hot(y, dim)
         return one_hot
 
+
     @tf.function
-    def propagation(self, x, y_true, n_s, phase):
+    def propagate_with_graph(self, x, y, phase, k):
+        loss, y_pred = self.propagation(x, y, phase)
+        
+        hit_rate = self.score_manager.hit_rate(y, y_pred, k)
+        
+        return loss, y_pred, hit_rate
+
+
+    def propagation(self, x, y_true, phase):
         with tf.GradientTape() as tape:
             y_pred = self.model(x)
-            
-            loss = self.loss_manager.bpr_loss(y_true, n_s, y_pred)
-                            
+                        
+            loss = self.loss_manager.bpr_loss(y_true, y_pred)
+ 
         gradients = tape.gradient(loss, self.model.trainable_variables)
         
         if phase == "train":
             self.optimizer_wrap.optimizer.apply_gradients(
                 zip(gradients, self.model.trainable_variables))
-        
+
         return loss, y_pred
     
     '''
