@@ -1,10 +1,12 @@
 import tensorflow as tf
 import numpy as np
 import time
+import datetime
 
 from TrainModule.Scheduler import CosineDecayWrapper
 from TrainModule.LossManager import LossManager
 from TrainModule.ScoreManager import ScoreManager
+import keras
 
 class TrainManager():
     def __init__(self, model, dataloader, config) -> None:
@@ -19,18 +21,29 @@ class TrainManager():
         self.loss_manager = LossManager()
         self.score_manager = ScoreManager()
         
-        self.optimizer_wrap = CosineDecayWrapper(
-                optimizer = tf.keras.optimizers.Adam(
-                    learning_rate=self.config["learning_rate"], beta_1=0.9, beta_2=0.999),
-                max_lr = self.config["learning_rate"],
-                min_lr = self.config["min_learning_rate"],
-                max_epochs = self.config["max_epoch"],
-                decay_cycles = self.config["decay_cycle"],
-                decay_epochs = self.config["decay_epoch"]
-            )
+        self.optimizer_init()
         
         self.log = {}
     
+    def optimizer_init(self):
+        optimizer = None
+        if self.config["optimizer"] == "ADAM":
+            optimizer = tf.keras.optimizers.Adam(
+                        learning_rate=self.config["learning_rate"], beta_1=0.9, beta_2=0.999)
+        elif self.config["optimizer"] == "SGD":
+            optimizer = tf.keras.optimizers.SGD(
+                        learning_rate=self.config["learning_rate"], momentum=0.9)
+        else:
+            raise Exception("Write Appropriate Optimizer")
+
+        self.optimizer_wrap = CosineDecayWrapper(
+                optimizer= optimizer,
+                max_lr=self.config["learning_rate"],
+                min_lr=self.config["min_learning_rate"],
+                max_epochs=self.config["max_epoch"],
+                decay_cycles=self.config["decay_cycle"],
+                decay_epochs=self.config["decay_epoch"]
+        )
     
     def start(self):
         total_epoch = self.config["max_epoch"]
@@ -63,6 +76,7 @@ class TrainManager():
             if not_update_count >= 20:
                 print("No update on valid loss. Early stop...")
                 break
+        return save_valid_hr
         
                 
     def train_loop(self, phase):
@@ -73,7 +87,7 @@ class TrainManager():
             dataset = self.dataloader.get_dataset("valid")
             
         total_step = len(dataset)
-        print_step = total_step // 10
+        print_step = total_step // 3
         
         all_loss_list = []
         loss_list = []
@@ -85,13 +99,28 @@ class TrainManager():
         for idx, sample in enumerate(dataset):
             x, y = sample
             # n_s = self.dataloader.get_negative_sample(u)  
-            loss, y_pred, hr = self.propagate_with_graph(x, y, phase, k = 10)
             
+            # if idx == 0:
+            #     ## Trace Initialize
+            #     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            #     logdir = 'log/func/%s' % stamp
+            #     writer = tf.summary.create_file_writer(logdir)
+            #     tf.summary.trace_on(graph=True, profiler=True)
+            
+            loss, y_pred, hr = self.propagate_with_graph(x, y, phase, k = 10)
+            # if idx == 0:
+            #     ## Write
+            #     with writer.as_default():
+            #         tf.summary.trace_export(name="my_func_trace",
+            #                                 step=0,
+            #                                 profiler_outdir=logdir)
+            #     tf.summary.trace_off()
+                
             all_loss_list.append(loss)
             loss_list.append(loss)
             all_hr_list.append(hr)
             hr_list.append(hr)
-                        
+            
             if (idx+1) % print_step == 0:
                 end_time = time.time()
                 
@@ -120,17 +149,12 @@ class TrainManager():
         one_hot = tf.one_hot(y, dim)
         return one_hot
 
-
     @tf.function
     def propagate_with_graph(self, x, y, phase, k):
-        tf.profiler.experimental.start('./log')
-
         loss, y_pred = self.propagation(x, y, phase)
         
         hit_rate = self.score_manager.hit_rate(y, y_pred, k)
         
-        tf.profiler.experimental.stop()
-
         return loss, y_pred, hit_rate
 
 

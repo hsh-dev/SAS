@@ -8,7 +8,7 @@ class ScoreManager():
     def __init__(self) -> None:
         pass
     
-        
+    @tf.function
     def hit_rate(self, y_true, y_pred, k, sequence = True):
         '''
         Recording hit if target is in top-k items
